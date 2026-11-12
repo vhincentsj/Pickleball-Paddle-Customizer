@@ -73,8 +73,8 @@
   .layer.front, .layer.back, .layer.hfront, .layer.hback { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
   .layer.front  { transform: translateZ(calc(var(--half, 12) * var(--u, 1) * 1px)); }
   .layer.back   { transform: translateZ(calc(var(--half, 12) * var(--u, 1) * -1px)) rotateY(180deg); }
-  .layer.hfront { transform: translateZ(calc(var(--hz, 18) * var(--u, 1) * 1px)); }
-  .layer.hback  { transform: translateZ(calc(var(--hz, 18) * var(--u, 1) * -1px)) rotateY(180deg); }
+  .layer.hfront { transform: translateZ(calc(var(--hz, 18) * var(--u, 1) * 1px)) scaleX(var(--hpw, 1)); }
+  .layer.hback  { transform: translateZ(calc(var(--hz, 18) * var(--u, 1) * -1px)) rotateY(180deg) scaleX(var(--hpw, 1)); }
   .layer .shade, .layer .glare { position: absolute; inset: 0; will-change: opacity; opacity: 0; }
   /* Edge wall of the head: thin slices stacked along Z (--f runs -1..1), darker toward the faces = rounded edge. */
   .layer.slice  { transform: translateZ(calc(var(--f) * var(--half, 12) * var(--u, 1) * 1px)); }
@@ -84,6 +84,7 @@
     stroke: var(--c-edge, #0f172a); stroke: color-mix(in srgb, #000 calc(var(--sh, 0) * 100%), var(--c-edge, #0f172a));
   }
   .slice .s-lit { fill: none; stroke-width: var(--edge-w, 16); stroke-linejoin: round; stroke: url(#edgeLight); }
+  .model.metal .slice .s-lit { stroke: url(#gradEdgeWall); }
   /* Handle: a rounded prism, deeper than the head (--s runs -1..1). */
   .layer.hslice { transform: translateZ(calc(var(--s) * var(--hz, 18) * var(--u, 1) * 1px)); }
   .hslice .s-handle { fill: var(--c-handle, #1e293b); fill: color-mix(in srgb, #000 calc(var(--sh, 0) * 100%), var(--c-handle, #1e293b)); }
@@ -210,6 +211,26 @@
   .thumb { width: 48px; height: 48px; flex: none; border-radius: 10px; border: 1px dashed var(--border); background: var(--bg) center / contain no-repeat; }
   .thumb.has { border-style: solid; }
 
+  /* image layers, metal chips, save & share */
+  .lyr-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .lyr { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 6px 8px; cursor: pointer; font-size: 13px; }
+  .lyr.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .lyr .lt { width: 34px; height: 34px; flex: none; border-radius: 7px; background: var(--panel-2) center / contain no-repeat; border: 1px solid var(--border); }
+  .lyr .ln { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lyr.off .ln { opacity: .45; text-decoration: line-through; }
+  .lyr .lb { background: transparent; border: 0; color: var(--muted); cursor: pointer; padding: 5px 7px; border-radius: 6px; font: inherit; font-size: 12px; }
+  .lyr .lb:hover { background: var(--panel-2); color: var(--text); }
+  .ly-empty { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .metal-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 13px; }
+  .metal-row label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .metal-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .metal-chips { display: flex; gap: 6px; }
+  .metal-chip { width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(255,255,255,.3); cursor: pointer; padding: 0; }
+  .metal-chip:hover { transform: scale(1.1); }
+  .sub { margin: 24px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+  textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: 12px ui-monospace, Menlo, Consolas, monospace; resize: vertical; margin: 12px 0 8px; }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
   @media (max-width: 880px) {
     .app { grid-template-columns: 1fr; grid-template-rows: 58vh auto; height: auto; }
     .viewport { height: 58vh; border-right: 0; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2; }
@@ -240,9 +261,14 @@
           <use href="#face"/>
           <g clip-path="url(#faceClip)">
             <rect id="facePatternB" x="60" y="0" width="280" height="780" opacity="0"/>
-            <rect id="gritB" x="60" y="0" width="280" height="780" filter="url(#grit)" opacity=".4"/>
+            <rect id="gritB" x="60" y="0" width="280" height="780" filter="url(#gritFx)" opacity=".4"/>
+            <g id="layersB"></g>
           </g>
           <use href="#edgeguard"/>
+          <g id="edgeDecoB">
+            <text id="edgeTxtB" text-anchor="middle" dy=".35em" font-family="Inter, system-ui, Arial, sans-serif" font-weight="700" style="display:none"><textPath id="edgeTPB" href="#edgeTextPath" startOffset="50%"></textPath></text>
+            <image id="edgeImgB" preserveAspectRatio="none" style="display:none"/>
+          </g>
           <use href="#collarG"/>
         </svg>
         <svg class="shade" id="shadeB" viewBox="0 0 400 780" aria-hidden="true"><path data-geo="closed" fill="#000"/><path data-geo="open" class="ew" fill="none" stroke="#000"/></svg>
@@ -286,11 +312,25 @@
             <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
             <stop id="hlB" offset="1" stop-color="#000" stop-opacity=".45"/>
           </linearGradient>
-          <!-- matte grit for the hitting surface -->
-          <filter id="grit" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="1.15" numOctaves="2" seed="11"/>
-            <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -0.62"/>
+          <!-- Surface grit: dark and light speckle so it reads on black carbon and on light fiberglass alike -->
+          <filter id="gritFx" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="11" result="n"/>
+            <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  3.4 0 0 0 -1.95" result="lt"/>
+            <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 -4.2 0 0 1.8" result="dk"/>
+            <feMerge><feMergeNode in="dk"/><feMergeNode in="lt"/></feMerge>
           </filter>
+          <!-- Metallic finishes: stops are generated from the chosen color -->
+          <linearGradient id="gradEdgeMetal" gradientUnits="userSpaceOnUse" x1="60" y1="60" x2="340" y2="460"></linearGradient>
+          <linearGradient id="gradCollarMetal" x1="0" y1="0" x2="0" y2="1"></linearGradient>
+          <linearGradient id="gradCapMetal" x1="0" y1="0" x2="0" y2="1"></linearGradient>
+          <linearGradient id="gradEdgeWall" gradientUnits="userSpaceOnUse" x1="60" y1="60" x2="340" y2="420">
+            <stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset=".15" stop-color="#000" stop-opacity=".28"/>
+            <stop offset=".3" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="#000" stop-opacity=".4"/>
+            <stop offset=".6" stop-color="#fff" stop-opacity=".5"/><stop offset=".8" stop-color="#000" stop-opacity=".42"/>
+            <stop offset="1" stop-color="#fff" stop-opacity=".35"/>
+          </linearGradient>
+          <g id="layerDefs"></g>
+          <path id="edgeTextPath" data-geo="open" d="M100 190V360"/>
           <linearGradient id="throatShade" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#000" stop-opacity=".55"/>
             <stop offset="1" stop-color="#000" stop-opacity="0"/>
@@ -332,9 +372,10 @@
           <rect id="facePattern" x="60" y="0" width="280" height="780" opacity="0"/>
           <rect id="glossRect" x="60" y="0" width="280" height="780" fill="url(#glossGrad)" opacity="0"/>
           <rect x="60" y="0" width="280" height="780" fill="url(#sheen)"/>
-          <rect id="gritF" x="60" y="0" width="280" height="780" filter="url(#grit)" opacity=".4"/>
+          <rect id="gritF" x="60" y="0" width="280" height="780" filter="url(#gritFx)" opacity=".4"/>
           <!-- inner shadow where the face meets the edgeguard -->
           <path id="edgeInner" data-geo="open" fill="none" stroke="#000" stroke-opacity=".34" stroke-width="22" stroke-linejoin="round"/>
+          <g id="layersF"></g>
           <g id="textG">
             <text id="faceText" x="200" y="260" text-anchor="middle" dominant-baseline="central"
                   font-family="Inter, system-ui, Arial, sans-serif" font-weight="700" font-size="14" letter-spacing="2.5"
@@ -343,16 +384,20 @@
                   font-family="Inter, system-ui, Arial, sans-serif" font-weight="600" font-size="10" letter-spacing="2.5"
                   fill="#2dd4bf" fill-opacity=".8"></text>
           </g>
-          <!-- Face logo: image wrapped in a <g> so X / Y / rotation act on the group transform -->
-          <g id="logoGroup" transform="translate(200 257) rotate(0)" display="none">
-            <image id="logoImage" x="-45" y="-45" width="90" height="90" preserveAspectRatio="none"/>
           </g>
+        </g>
+
+        <!-- Edgeguard          </g>
         </g>
 
         <!-- Edgeguard: a thin wrap that follows the head and runs down both sides of the throat -->
         <path id="edgeguard" data-geo="open" d="M100 190C100 95 150 42 200 42S300 95 300 190V360C300 432 260 472 200 472S100 432 100 360Z"
               fill="none" stroke="#2dd4bf" stroke-width="12" stroke-linejoin="round"/>
         <path id="edgeHi" data-geo="open" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.6" stroke-linejoin="round"/>
+        <g id="edgeDecoF">
+            <text id="edgeTxtF" text-anchor="middle" dy=".35em" font-family="Inter, system-ui, Arial, sans-serif" font-weight="700" style="display:none"><textPath id="edgeTPF" href="#edgeTextPath" startOffset="50%"></textPath></text>
+            <image id="edgeImgF" preserveAspectRatio="none" style="display:none"/>
+          </g>
         <!-- Throat ring where the edgeguard meets the grip -->
         <g id="collarG">
           <rect id="collar" x="168" y="458" width="64" height="12" rx="3" fill="#2dd4bf"/>
@@ -431,6 +476,13 @@
     <div class="card">
       <h2>Surface material <span class="badge info" id="surfName"></span></h2>
       <div class="mats" id="mats" role="group" aria-label="Surface material"></div>
+      <div class="row" style="margin-bottom:16px">
+        <span class="field-label">Your own image as the surface</span>
+        <div class="asset-btns">
+          <button class="btn small" id="surfUpload" type="button">Upload image…</button>
+          <button class="btn small" id="surfRemove" type="button">Remove</button>
+        </div>
+      </div>
       <div class="spec">
         <div class="spec-top"><span>Pattern scale</span><b id="matScaleVal"></b></div>
         <input id="matScale" type="range" min="50" max="220" step="5" aria-label="Pattern scale">
@@ -462,7 +514,7 @@
     </div>
 
     <div class="card">
-      <h2>Custom assets</h2>
+      <h2>Custom surface pattern</h2>
       <div class="asset">
         <div class="asset-top">
           <div class="thumb" id="patThumb" aria-hidden="true"></div>
@@ -482,33 +534,58 @@
           <input id="patOp" type="range" min="10" max="100" step="1" aria-label="Pattern opacity">
         </div>
       </div>
-      <div class="asset">
+    </div>
+
+    <div class="card">
+      <h2>Image layers <span class="badge info" id="lyCount"></span></h2>
+      <p class="note">Add logos or artwork and stack them. The top of the list sits in front. Each layer can sit on side A, side B or both, and can repeat as a tiled pattern across the face.</p>
+      <div class="lyr-list" id="layerList"></div>
+      <p class="ly-empty" id="lyEmpty">No image layers yet.</p>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <button class="btn small" id="lyPick" type="button">Add image (PNG / JPG)</button>
+        <input id="lyFile" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
+      </div>
+      <div id="lyPanel" style="margin-top:16px">
+        <div class="row"><span class="field-label">Show on</span>
+          <div class="seg" id="lySideSeg" style="min-width:230px"><button data-v="a">Side A</button><button data-v="b">Side B</button><button data-v="both">Both</button></div></div>
+        <div class="row"><span class="field-label">Mode</span>
+          <div class="seg" id="lyModeSeg" style="min-width:230px"><button data-v="single">Single</button><button data-v="tile">Tiled</button></div></div>
+        <div class="spec"><div class="spec-top"><span>Size</span><b id="lySizeVal"></b></div><input id="lySize" type="range" min="10" max="440" step="1" aria-label="Layer size"></div>
+        <div class="spec"><div class="spec-top"><span>Tile gap</span><b id="lyGapVal"></b></div><input id="lyGap" type="range" min="0" max="160" step="1" aria-label="Tile gap"></div>
+        <div class="spec"><div class="spec-top"><span>X position</span><b id="lyXVal"></b></div><input id="lyX" type="range" min="-300" max="300" step="1" aria-label="Layer X"></div>
+        <div class="spec"><div class="spec-top"><span>Y position</span><b id="lyYVal"></b></div><input id="lyY" type="range" min="-400" max="400" step="1" aria-label="Layer Y"></div>
+        <div class="spec"><div class="spec-top"><span>Rotation</span><b id="lyRotVal"></b></div><input id="lyRot" type="range" min="-180" max="180" step="1" aria-label="Layer rotation"></div>
+        <div class="spec"><div class="spec-top"><span>Opacity</span><b id="lyOpVal"></b></div><input id="lyOp" type="range" min="5" max="100" step="1" aria-label="Layer opacity"></div>
+        <button class="btn small" id="lyReset" type="button">Reset position</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Edgeguard print</h2>
+      <p class="note">Print text or a logo on the edgeguard of side A, side B or both. Position 50% is the very top of the paddle; 25% and 75% are the left and right sides.</p>
+      <div class="row" style="display:block">
+        <label for="edgeTextInput" class="field-label">Edgeguard text (max 28)</label>
+        <input id="edgeTextInput" type="text" maxlength="28" style="margin-top:8px" placeholder="e.g. YOUR BRAND">
+      </div>
+      <div class="row" style="margin-top:14px"><span class="field-label">Show on</span>
+        <div class="seg" id="edgeTextSideSeg" style="min-width:230px"><button data-v="a">Side A</button><button data-v="b">Side B</button><button data-v="both">Both</button></div></div>
+      <div class="spec"><div class="spec-top"><span>Text position</span><b id="edgeTextPosVal"></b></div><input id="edgeTextPos" type="range" min="6" max="94" step="1" aria-label="Edge text position"></div>
+      <div class="spec"><div class="spec-top"><span>Text size</span><b id="edgeTextSizeVal"></b></div><input id="edgeTextSize" type="range" min="5" max="24" step="0.5" aria-label="Edge text size"></div>
+      <div class="row"><label for="edgeTextColor">Text color</label><input id="edgeTextColor" type="color"></div>
+      <div class="asset" style="margin-top:18px">
         <div class="asset-top">
-          <div class="thumb" id="logoThumb" aria-hidden="true"></div>
-          <div class="asset-info"><b>Central logo</b><small>PNG or JPG · sits on the face</small></div>
+          <div class="thumb" id="edgeThumb" aria-hidden="true"></div>
+          <div class="asset-info"><b>Edgeguard logo</b><small>PNG or JPG · sits on the edgeguard</small></div>
           <div class="asset-btns">
-            <button class="btn small" id="logoPick" type="button">Upload</button>
-            <button class="btn small" id="logoClear" type="button">Remove</button>
+            <button class="btn small" id="edgeImgPick" type="button">Upload</button>
+            <button class="btn small" id="edgeImgClear" type="button">Remove</button>
           </div>
-          <input id="logoFile" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
+          <input id="edgeImgFile" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
         </div>
-        <div class="spec">
-          <div class="spec-top"><span>Size</span><b id="logoSizeVal"></b></div>
-          <input id="logoSize" type="range" min="20" max="180" step="1" aria-label="Logo size">
-        </div>
-        <div class="spec">
-          <div class="spec-top"><span>X position</span><b id="logoXVal"></b></div>
-          <input id="logoX" type="range" min="-90" max="90" step="1" aria-label="Logo X position">
-        </div>
-        <div class="spec">
-          <div class="spec-top"><span>Y position</span><b id="logoYVal"></b></div>
-          <input id="logoY" type="range" min="-200" max="200" step="1" aria-label="Logo Y position">
-        </div>
-        <div class="spec">
-          <div class="spec-top"><span>Rotation</span><b id="logoRotVal"></b></div>
-          <input id="logoRot" type="range" min="-180" max="180" step="1" aria-label="Logo rotation">
-        </div>
-        <button class="btn small" id="logoCenter" type="button">Reset position</button>
+        <div class="row"><span class="field-label">Show on</span>
+          <div class="seg" id="edgeImgSideSeg" style="min-width:230px"><button data-v="a">Side A</button><button data-v="b">Side B</button><button data-v="both">Both</button></div></div>
+        <div class="spec"><div class="spec-top"><span>Logo size</span><b id="edgeImgSizeVal"></b></div><input id="edgeImgSize" type="range" min="8" max="70" step="1" aria-label="Edge logo size"></div>
+        <div class="spec" style="margin-bottom:0"><div class="spec-top"><span>Logo position</span><b id="edgeImgPosVal"></b></div><input id="edgeImgPos" type="range" min="6" max="94" step="1" aria-label="Edge logo position"></div>
       </div>
     </div>
 
@@ -532,6 +609,27 @@
         <label for="textColor">Text color</label>
         <input id="textColor" type="color">
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Save &amp; share design</h2>
+      <p class="note">The page address updates as you design, so you can bookmark it or copy a link. Links and codes leave out uploaded images; Download JSON saves everything, images included, and Load JSON restores it.</p>
+      <div class="actions" style="margin-top:0">
+        <button class="btn primary" id="copyLink" type="button">Copy share link</button>
+        <button class="btn" id="copyCode" type="button">Copy design code</button>
+        <button class="btn" id="dlJson" type="button">Download JSON</button>
+        <button class="btn" id="copyJson" type="button">Copy JSON</button>
+        <button class="btn" id="loadJsonBtn" type="button" style="grid-column:1 / -1">Load JSON file…</button>
+      </div>
+      <input id="jsonFile" type="file" accept=".json,application/json" hidden>
+      <div class="row" style="display:block; margin-top:16px">
+        <label for="codeBox" class="field-label">Design code</label>
+        <input id="codeBox" type="text" spellcheck="false" autocomplete="off" style="margin-top:8px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px" placeholder="Paste a code here to load a design">
+        <button class="btn" id="loadCode" type="button" style="margin-top:10px; width:100%">Load code</button>
+      </div>
+      <textarea id="jsonBox" rows="3" placeholder="…or paste design JSON here" spellcheck="false"></textarea>
+      <button class="btn" id="loadPasted" type="button" style="width:100%">Load pasted JSON</button>
+      <div class="note" id="imgWarn" style="margin:12px 0 0; color:#fbbf24; display:none">This design uses uploaded images, which are not included in the link or code. Use Download JSON to keep them.</div>
     </div>
 
     <div class="card summary">
@@ -560,7 +658,6 @@
       <div class="actions">
         <button class="btn primary" id="exportPng" type="button">Export PNG</button>
         <button class="btn" id="dlSvg" type="button">Download SVG</button>
-        <button class="btn" id="copyCfg" type="button">Copy design JSON</button>
         <button class="btn" id="randomize" type="button">Randomize</button>
         <button class="btn" id="reset" type="button">Reset</button>
       </div>
@@ -703,17 +800,25 @@
     { name: 'Bridge Slate', surface: 'friction', face: '#14161a', edge: '#475569', collar: '#475569', handle: '#15181d', cap: '#1e293b', text: '#94a3b8' },
     { name: 'Shield Rose',  surface: 'glossy',   face: '#101215', edge: '#e8a58f', collar: '#ec4899', handle: '#15181d', cap: '#c98a6b', text: '#e8a58f' },
     { name: 'Glacier',      surface: 'fiberglass', face: '#cdd0d3', edge: '#38bdf8', collar: '#38bdf8', handle: '#e2e8f0', cap: '#38bdf8', text: '#475569' },
-    { name: 'Hex Gold',     surface: 'hex',      face: '#5a5742', edge: '#b8862b', collar: '#b8862b', handle: '#15181d', cap: '#b8862b', text: '#facc15' }
+    { name: 'Hex Gold',     surface: 'hex',      face: '#5a5742', edge: '#b8862b', collar: '#b8862b', handle: '#15181d', cap: '#b8862b', text: '#facc15' },
+    { name: 'Rose Gold',    surface: 'glossy',   face: '#101215', edge: '#d89a8a', collar: '#d89a8a', handle: '#15181d', cap: '#d89a8a', text: '#e8b4a6', edgeMetal: true, collarMetal: true, capMetal: true },
+    { name: 'Gold Rush',    surface: 'gold-kvl', face: '#1d180c', edge: '#d4af37', collar: '#d4af37', handle: '#15181d', cap: '#d4af37', text: '#f5d76e', edgeMetal: true, collarMetal: true, capMetal: true },
+    { name: 'Silver Steel', surface: '12k',      face: '#0e1012', edge: '#c9ced6', collar: '#c9ced6', handle: '#15181d', cap: '#c9ced6', text: '#e2e8f0', edgeMetal: true, collarMetal: true, capMetal: true }
   ];
 
+  var METALS = [
+    { label: 'Gold', c: '#d4af37' }, { label: 'Rose gold', c: '#d89a8a' }, { label: 'Silver', c: '#c9ced6' },
+    { label: 'Copper', c: '#b87333' }, { label: 'Champagne', c: '#e6cf9a' }
+  ];
   var PARTS = [
     { key: 'face',   label: 'Face',        sub: 'Solid colour only' },
-    { key: 'edge',   label: 'Edgeguard',   sub: '' },
-    { key: 'collar', label: 'Throat ring', sub: '' },
+    { key: 'edge',   label: 'Edgeguard',   sub: '', metal: 'edgeMetal' },
+    { key: 'collar', label: 'Throat ring', sub: '', metal: 'collarMetal' },
     { key: 'handle', label: 'Grip',        sub: '' },
-    { key: 'cap',    label: 'Butt cap',    sub: '' }
+    { key: 'cap',    label: 'Butt cap',    sub: '', metal: 'capMetal' }
   ];
 
+  var MAX_LAYERS = 8;
   var DEFAULTS = {
     surface: 'friction', face: '#14161a', fill: 'gradient',
     edge: '#2dd4bf', collar: '#2dd4bf', handle: '#15181d', cap: '#2dd4bf',
@@ -722,22 +827,70 @@
     shape: 'standard', len: 16, wid: 7.75, hl: 5.0, thick: 16,
     tilt: 0, zoom: 100,
     patImg: null, patAspect: 1, patSize: 80, patOpacity: 100,
-    logoImg: null, logoAspect: 1, logoSize: 90, logoX: 0, logoY: 0, logoRot: 0,
+    layers: [],
+    edgeMetal: false, collarMetal: false, capMetal: false,
+    edgeText: '', edgeTextSide: 'both', edgeTextPos: 50, edgeTextSize: 8, edgeTextColor: '#ffffff',
+    edgeImg: null, edgeImgAspect: 1, edgeImgSize: 24, edgeImgPos: 50, edgeImgSide: 'both',
     expView: 'front', expBg: 'white', expRes: '3'
   };
 
-  var STORE_KEY = 'paddle-designer-v2';
-  function load() { try { var s = localStorage.getItem(STORE_KEY); return s ? Object.assign(clone(DEFAULTS), JSON.parse(s)) : null; } catch (e) { return null; } }
+  var STORE_KEY = 'paddle-designer-v3';
+  function uid() { return 'l' + Math.random().toString(36).slice(2, 8); }
+  function isImg(v) { return typeof v === 'string' && v.length < 8e6 && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(v); }
+  function sanLayer(l) {
+    if (!l || !isImg(l.img)) return null;
+    function num(v, d, lo, hi) { v = +v; return clamp(isFinite(v) ? v : d, lo, hi); }
+    return {
+      id: String(l.id || '').replace(/[^\w-]/g, '').slice(0, 20) || uid(), name: String(l.name || 'Image').slice(0, 24), img: l.img,
+      aspect: num(l.aspect, 1, 0.05, 20), size: num(l.size, 150, 10, 440), x: num(l.x, 0, -300, 300), y: num(l.y, 0, -400, 400),
+      rot: num(l.rot, 0, -180, 180), opacity: num(l.opacity, 100, 5, 100),
+      side: ['a', 'b', 'both'].indexOf(l.side) >= 0 ? l.side : 'both', tile: !!l.tile, gap: num(l.gap, 0, 0, 160), hidden: !!l.hidden
+    };
+  }
+  // Turns any parsed object (saved JSON, URL, localStorage) into a safe, complete state.
+  function sanitize(o) {
+    var s = clone(DEFAULTS);
+    if (!o || typeof o !== 'object') return s;
+    Object.keys(DEFAULTS).forEach(function (k) {
+      if (!(k in o)) return;
+      var v = o[k], d = DEFAULTS[k];
+      if (k === 'layers') { if (Array.isArray(v)) { var seen = {}; s.layers = v.slice(0, MAX_LAYERS).map(sanLayer).filter(function (l) { if (!l || seen[l.id]) return false; seen[l.id] = 1; return true; }); } }
+      else if (typeof d === 'number') { v = +v; if (isFinite(v)) s[k] = v; }
+      else if (typeof d === 'boolean') s[k] = !!v;
+      else if (typeof d === 'string') { if (typeof v === 'string') s[k] = v; }
+      else if (d === null) { if (isImg(v)) s[k] = v; }
+    });
+    ['face', 'edge', 'collar', 'handle', 'cap', 'text', 'edgeTextColor'].forEach(function (k) { s[k] = parseHex(s[k]) || DEFAULTS[k]; });
+    if (s.surface !== 'solid' && s.surface !== 'custom' && !matOf(s.surface)) s.surface = DEFAULTS.surface;
+    if (!SHAPES[s.shape]) s.shape = 'standard';
+    if (['solid', 'gradient'].indexOf(s.fill) < 0) s.fill = 'gradient';
+    if (['across', 'along'].indexOf(s.textDir) < 0) s.textDir = 'across';
+    ['edgeTextSide', 'edgeImgSide'].forEach(function (k) { if (['a', 'b', 'both'].indexOf(s[k]) < 0) s[k] = 'both'; });
+    if (['front', 'back', 'both'].indexOf(s.expView) < 0) s.expView = 'front';
+    if (['transparent', 'white', 'studio', 'dark'].indexOf(s.expBg) < 0) s.expBg = 'white';
+    if (['2', '3', '4'].indexOf(String(s.expRes)) < 0) s.expRes = '3'; else s.expRes = String(s.expRes);
+    s.name = s.name.slice(0, 14); s.sub = s.sub.slice(0, 16); s.edgeText = s.edgeText.slice(0, 28);
+    s.thick = clamp(s.thick, 10, 16); s.matScale = clamp(s.matScale, 50, 220); s.grit = clamp(s.grit, 0, 100);
+    s.edgeW = clamp(s.edgeW, 6, 26); s.edgeTextPos = clamp(s.edgeTextPos, 6, 94); s.edgeTextSize = clamp(s.edgeTextSize, 5, 24);
+    s.edgeImgSize = clamp(s.edgeImgSize, 8, 70); s.edgeImgPos = clamp(s.edgeImgPos, 6, 94);
+    s.edgeImgAspect = clamp(s.edgeImgAspect, 0.05, 20); s.patAspect = clamp(s.patAspect, 0.05, 20);
+    s.patSize = clamp(s.patSize, 20, 200); s.patOpacity = clamp(s.patOpacity, 10, 100);
+    s.tilt = clamp(s.tilt, -25, 25); s.zoom = clamp(s.zoom, 70, 125);
+    return s;
+  }
+  function load() { try { var s = localStorage.getItem(STORE_KEY); return s ? sanitize(JSON.parse(s)) : null; } catch (e) { return null; } }
+
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch (e) {
-      try { var lite = clone(state); lite.patImg = null; lite.logoImg = null; if (lite.surface === 'custom') lite.surface = 'solid'; localStorage.setItem(STORE_KEY, JSON.stringify(lite)); } catch (e2) {}
+      try { var lite = clone(state); lite.patImg = null; lite.edgeImg = null; lite.layers = []; if (lite.surface === 'custom') lite.surface = 'solid'; localStorage.setItem(STORE_KEY, JSON.stringify(lite)); } catch (e2) {}
     }
   }
   var saveTimer;
   function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 250); }
 
   var state = load() || clone(DEFAULTS);
+  (function () { var m = /#d=(.+)$/.exec(location.hash); if (m) { var h = decodeCode(m[1]); if (h) state = h; } })();
   if (!SHAPES[state.shape]) state.shape = 'standard';
   if (state.surface !== 'solid' && state.surface !== 'custom' && !matOf(state.surface)) state.surface = 'friction';
   state.thick = clamp(+state.thick || 16, 10, 16);   // thickness range is 10-16 mm
@@ -781,6 +934,21 @@
       b.addEventListener('click', function () { setColor(p.key, c); });
       sw.appendChild(b);
     });
+    if (p.metal) {
+      var mr = document.createElement('div');
+      mr.className = 'metal-row';
+      mr.innerHTML = '<label><input type="checkbox" data-metal="' + p.metal + '"> Metallic finish</label><span class="metal-chips"></span>';
+      var chips = mr.querySelector('.metal-chips');
+      METALS.forEach(function (m) {
+        var cb = document.createElement('button');
+        cb.type = 'button'; cb.className = 'metal-chip'; cb.title = m.label; cb.setAttribute('aria-label', m.label + ' metallic');
+        cb.style.background = 'linear-gradient(135deg,' + shade(m.c, 0.55) + ',' + m.c + ' 50%,' + shade(m.c, -0.4) + ')';
+        cb.addEventListener('click', function () { state[p.metal] = true; setColor(p.key, m.c); });
+        chips.appendChild(cb);
+      });
+      mr.querySelector('input').addEventListener('change', function (e) { state[p.metal] = e.target.checked; update(); });
+      wrap.appendChild(mr);
+    }
     wrap.querySelector('input[type=color]').addEventListener('input', function (e) { setColor(p.key, e.target.value); });
     var hexEl = wrap.querySelector('input.hex');
     hexEl.addEventListener('input', function (e) {
@@ -799,6 +967,7 @@
     b.innerHTML = '<div class="bar"><i style="background:' + (m ? m.base : p.face) + '"></i><i style="background:' + p.edge + '"></i><i style="background:' + p.handle + '"></i><i style="background:' + p.cap + '"></i></div>' + p.name;
     b.addEventListener('click', function () {
       ['surface', 'face', 'edge', 'collar', 'handle', 'cap', 'text'].forEach(function (k) { state[k] = p[k]; });
+      ['edgeMetal', 'collarMetal', 'capMetal'].forEach(function (k) { state[k] = !!p[k]; });
       update(); toast(p.name + ' applied');
     });
     presetsEl.appendChild(b);
@@ -810,7 +979,10 @@
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'mat'; b.dataset.id = id; b.disabled = !!disabled;
     b.innerHTML = inner + '<span>' + label + '</span>';
-    b.addEventListener('click', function () { state.surface = id; update(); });
+    b.addEventListener('click', function () {
+      if (id === 'custom' && !state.patImg) { $('patFile').click(); return; }   // nothing uploaded yet: open the picker
+      state.surface = id; update();
+    });
     matsEl.appendChild(b);
   }
   addMatTile('solid', 'Solid colour', '<div class="mat-sw" id="solidSw"></div>');
@@ -818,19 +990,19 @@
     addMatTile(m.id, m.label,
       '<svg viewBox="0 0 90 54" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="90" height="54" fill="' + m.base + '"/><rect width="90" height="54" fill="url(#t-' + m.id + ')"/></svg>');
   });
-  addMatTile('custom', 'Custom upload', '<div class="mat-sw" id="customSw"></div>', true);
+  addMatTile('custom', 'Custom upload', '<div class="mat-sw" id="customSw"></div>', false);
 
   /* ---------- Generic segmented controls and sliders ---------- */
   function bindSeg(id, key) {
     $(id).querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { state[key] = b.dataset.v; update(); }); });
   }
-  bindSeg('fillSeg', 'fill'); bindSeg('dirSeg', 'textDir'); bindSeg('expViewSeg', 'expView'); bindSeg('expBgSeg', 'expBg');
+  bindSeg('fillSeg', 'fill'); bindSeg('dirSeg', 'textDir'); bindSeg('edgeTextSideSeg', 'edgeTextSide'); bindSeg('edgeImgSideSeg', 'edgeImgSide'); bindSeg('expViewSeg', 'expView'); bindSeg('expBgSeg', 'expBg');
   function bindRange(id, key, num) { $(id).addEventListener('input', function (e) { state[key] = num === false ? e.target.value : +e.target.value; update(); }); }
   bindRange('edgeW', 'edgeW'); bindRange('thick', 'thick'); bindRange('tilt', 'tilt'); bindRange('zoom', 'zoom');
   bindRange('matScale', 'matScale'); bindRange('grit', 'grit');
   bindRange('patSize', 'patSize'); bindRange('patOp', 'patOpacity');
-  bindRange('logoSize', 'logoSize'); bindRange('logoX', 'logoX'); bindRange('logoY', 'logoY'); bindRange('logoRot', 'logoRot');
   bindRange('expRes', 'expRes', false);
+  bindRange('edgeTextPos', 'edgeTextPos'); bindRange('edgeTextSize', 'edgeTextSize'); bindRange('edgeImgSize', 'edgeImgSize'); bindRange('edgeImgPos', 'edgeImgPos');
   $('gripToggle').addEventListener('change', function (e) { state.grip = e.target.checked; update(); });
   $('nameInput').addEventListener('input', function (e) { state.name = e.target.value; update(); });
   $('subInput').addEventListener('input', function (e) { state.sub = e.target.value; update(); });
@@ -871,10 +1043,10 @@
     var handle =
       'M' + (cx - nw) + ' ' + f(yB) + 'H' + (cx + nw) +
       'C' + (cx + nw - 2) + ' ' + f(yB + hl * 0.22) + ' ' + (cx + 19) + ' ' + f(yB + hl * 0.34) + ' ' + (cx + 19.5) + ' ' + f(yB + hl * 0.5) +
-      'C' + (cx + 20) + ' ' + f(yB + hl * 0.72) + ' ' + (cx + 23) + ' ' + f(end - 16) + ' ' + (cx + 23.5) + ' ' + f(end - 8) +
-      'Q' + (cx + 23.5) + ' ' + f(end) + ' ' + (cx + 16) + ' ' + f(end) + 'H' + (cx - 16) +
-      'Q' + (cx - 23.5) + ' ' + f(end) + ' ' + (cx - 23.5) + ' ' + f(end - 8) +
-      'C' + (cx - 23) + ' ' + f(end - 16) + ' ' + (cx - 20) + ' ' + f(yB + hl * 0.72) + ' ' + (cx - 19.5) + ' ' + f(yB + hl * 0.5) +
+      'C' + (cx + 20) + ' ' + f(yB + hl * 0.72) + ' ' + (cx + 23) + ' ' + f(end - 24) + ' ' + (cx + 23.5) + ' ' + f(end - 13) +
+      'Q' + (cx + 23.5) + ' ' + f(end) + ' ' + (cx + 11) + ' ' + f(end) + 'H' + (cx - 11) +
+      'Q' + (cx - 23.5) + ' ' + f(end) + ' ' + (cx - 23.5) + ' ' + f(end - 13) +
+      'C' + (cx - 23) + ' ' + f(end - 24) + ' ' + (cx - 20) + ' ' + f(yB + hl * 0.72) + ' ' + (cx - 19.5) + ' ' + f(yB + hl * 0.5) +
       'C' + (cx - 19) + ' ' + f(yB + hl * 0.34) + ' ' + (cx - nw + 2) + ' ' + f(yB + hl * 0.22) + ' ' + (cx - nw) + ' ' + f(yB) + 'Z';
     return { open: open, closed: open + 'Z', handle: handle, top: top, end: end, yB: yB, hgt: hgt, cy: top + hgt * 0.48 };
   }
@@ -944,13 +1116,11 @@
   wireUpload('patPick', 'patFile', 'patClear',
     function (url, w, h) { state.patImg = url; state.patAspect = h / w; state.surface = 'custom'; update(); toast('Pattern applied'); },
     function () { state.patImg = null; if (state.surface === 'custom') state.surface = 'solid'; update(); });
-  wireUpload('logoPick', 'logoFile', 'logoClear',
-    function (url, w, h) { state.logoImg = url; state.logoAspect = h / w; state.logoX = 0; state.logoY = 0; state.logoRot = 0; update(); toast('Logo applied'); },
-    function () { state.logoImg = null; update(); });
-  $('logoCenter').addEventListener('click', function () { state.logoX = 0; state.logoY = 0; state.logoRot = 0; update(); });
+  $('surfUpload').addEventListener('click', function () { $('patFile').click(); });
+  $('surfRemove').addEventListener('click', function () { $('patClear').click(); });
 
   /* ---------- Reset / randomize / copy ---------- */
-  $('reset').addEventListener('click', function () { var keep = { expView: state.expView, expBg: state.expBg, expRes: state.expRes }; state = Object.assign(clone(DEFAULTS), keep); update(); toast('Reset to defaults'); });
+  $('reset').addEventListener('click', function () { var keep = { expView: state.expView, expBg: state.expBg, expRes: state.expRes }; state = Object.assign(clone(DEFAULTS), keep); selLayer = null; update(); toast('Reset to defaults'); });
   $('randomize').addEventListener('click', function () {
     function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
     var m = pick(MATS), c = pick(PALETTE);
@@ -958,11 +1128,66 @@
     state.handle = pick(['#15181d', '#0f172a', '#e2e8f0', '#1e293b']);
     update();
   });
-  $('copyCfg').addEventListener('click', function () {
-    var txt = JSON.stringify(state, function (k, v) { return (k === 'patImg' || k === 'logoImg') && v ? '[embedded image]' : v; }, 2);
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { toast('Design copied'); }, function () { toast('Copy blocked by browser'); });
-    else toast('Clipboard not available');
+  /* ---------- Save / share: state -> compact code (URL-safe base64 of the non-default settings) ---------- */
+  var CODE_SKIP = { patImg: 1, patAspect: 1, edgeImg: 1, edgeImgAspect: 1, layers: 1, tilt: 1, zoom: 1 };
+  function encodeState() {
+    var diff = { v: 2 };
+    Object.keys(DEFAULTS).forEach(function (k) { if (!CODE_SKIP[k] && state[k] !== DEFAULTS[k]) diff[k] = state[k]; });
+    if (state.surface === 'custom') diff.surface = 'solid';           // the uploaded image can't travel with the code
+    var json = JSON.stringify(diff), bytes = new TextEncoder().encode(json), bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function decodeCode(code) {
+    try {
+      code = String(code).trim().replace(/^.*[#&?]d=/, '').replace(/-/g, '+').replace(/_/g, '/');
+      while (code.length % 4) code += '=';
+      var bin = atob(code), bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var o = JSON.parse(new TextDecoder().decode(bytes));
+      if (!o || typeof o !== 'object') return null;
+      var raw = {};
+      Object.keys(o).forEach(function (k) { if (!CODE_SKIP[k] && k in DEFAULTS) raw[k] = o[k]; });
+      var out = sanitize(raw);
+      if (out.surface === 'custom') out.surface = 'solid';
+      return out;
+    } catch (e) { return null; }
+  }
+  function keepImages(s) {
+    s.patImg = state.patImg; s.patAspect = state.patAspect; s.layers = state.layers; s.edgeImg = state.edgeImg; s.edgeImgAspect = state.edgeImgAspect;
+    if (s.surface === 'custom' && !s.patImg) s.surface = 'solid';
+  }
+  function shareUrl() { return location.href.split('#')[0] + '#d=' + encodeState(); }
+  function copyText(txt, okMsg) {
+    function fallback() {
+      var t = document.createElement('textarea'); t.value = txt; t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      t.remove(); toast(ok ? okMsg : 'Copy blocked — select the code box and copy manually');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { toast(okMsg); }, fallback);
+    else fallback();
+  }
+  $('copyLink').addEventListener('click', function () { copyText(shareUrl(), 'Share link copied'); });
+  $('copyCode').addEventListener('click', function () { copyText(encodeState(), 'Design code copied'); });
+  $('loadCode').addEventListener('click', function () {
+    var s = decodeCode($('codeBox').value);
+    if (!s) { toast('That code is not valid'); return; }
+    s.expView = state.expView; s.expBg = state.expBg; s.expRes = state.expRes;
+    keepImages(s); state = s; update(); toast('Design loaded');
   });
+  window.addEventListener('hashchange', function () {
+    var m = /#d=(.+)$/.exec(location.hash), s = m && decodeCode(m[1]);
+    if (s && encodeState() !== m[1]) { keepImages(s); state = s; update(); }
+  });
+  var hashTimer;
+  function syncHash() {
+    clearTimeout(hashTimer);
+    hashTimer = setTimeout(function () {
+      try { history.replaceState(null, '', '#d=' + encodeState()); } catch (e) {}
+      $('codeBox').value = encodeState();
+    }, 300);
+  }
 
   /* =====================================================================
      Export: compose a flat, high-resolution picture of the design (front / back / both)
@@ -976,12 +1201,13 @@
     function add(el) { g.appendChild(el.cloneNode(true)); }
     add($('face'));
     var clipG = $('faceClipG').cloneNode(true);
-    if (side === 'back') {                               // the back has no text or logo
-      var t = clipG.querySelector('#textG'), l = clipG.querySelector('#logoGroup');
-      if (t) t.remove(); if (l) l.remove();
+    if (side === 'back') {                               // the back has no face text; it has its own image layers
+      var t = clipG.querySelector('#textG'), lf = clipG.querySelector('#layersF');
+      if (t) t.remove();
+      if (lf) { lf.innerHTML = ''; Array.prototype.forEach.call($('layersB').children, function (c) { lf.appendChild(c.cloneNode(true)); }); }
     }
     g.appendChild(clipG);
-    add($('edgeguard')); add($('edgeHi')); add($('collarG')); add($('handleArt'));
+    add($('edgeguard')); add($('edgeHi')); add(side === 'back' ? $('edgeDecoB') : $('edgeDecoF')); add($('collarG')); add($('handleArt'));
     g.querySelectorAll('[id]').forEach(function (e) { e.removeAttribute('id'); });   // ids stay unique in <defs>
     return g;
   }
@@ -1068,7 +1294,14 @@
   function lodOffSoon(ms) { clearTimeout(lodTimer); lodTimer = setTimeout(function () { model.classList.remove('lod'); }, ms || 180); }
 
   // Depth. Thin slices of the outline stacked along Z make the edge wall; the faces are the two end plates.
-  function handleWidth(s) { return Math.pow(1 - Math.pow(0.9 * Math.abs(s), 6), 1 / 6); }
+  // Handle cross-section: a rounded rectangle (corner radius ~5 units). Returns the width scale at depth s (-1..1).
+  var hsGroups = [], lastHz = -1;
+  function handleWidth(s, hz) {
+    var rho = 5, hw0 = 22, z = Math.abs(s) * hz, edge = hz - rho;
+    if (z <= edge) return 1;
+    var dz = z - edge;
+    return (hw0 - (rho - Math.sqrt(Math.max(0, rho * rho - dz * dz)))) / hw0;
+  }
   (function buildSlices() {
     var frag = document.createDocumentFragment(), i, el;
     for (i = -19; i <= 19; i++) {                       // head: 39 slices, darker toward the faces so the edge reads as rounded
@@ -1079,15 +1312,15 @@
       el.innerHTML = '<svg viewBox="0 0 400 780" aria-hidden="true" focusable="false"><path class="s-fill" data-geo="closed"/><path class="s-edge" data-geo="open"/><path class="s-lit" data-geo="open"/></svg>';
       frag.appendChild(el);
     }
-    for (i = -9; i <= 9; i++) {                         // handle: 19 slices of a rounded prism, deeper than the head
-      var s = i / 10, g = handleWidth(s);
-      el = document.createElement('div');
-      el.className = 'layer hslice'; el.dataset.odd = Math.abs(i) % 2;
+    [-0.95, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95].forEach(function (s, idx) {
+      el = document.createElement('div');             // handle: 21 slices of a rounded-rectangle prism, deeper than the head
+      el.className = 'layer hslice'; el.dataset.odd = idx % 2;
       el.style.setProperty('--s', s); el.style.setProperty('--sh', (0.4 * Math.pow(Math.abs(s), 3)).toFixed(3));
-      el.innerHTML = '<svg viewBox="0 0 400 780" aria-hidden="true" focusable="false"><g transform="translate(200 0) scale(' + g.toFixed(4) + ' 1) translate(-200 0)">' +
+      el.innerHTML = '<svg viewBox="0 0 400 780" aria-hidden="true" focusable="false"><g class="hs-g">' +
         '<path class="s-handle" data-geo="handle"/><path class="s-grip" data-geo="handle"/><path class="s-hlit" data-geo="handle"/></g></svg>';
+      hsGroups.push({ el: el.querySelector('.hs-g'), s: s });
       frag.appendChild(el);
-    }
+    });
     model.appendChild(frag);
     var disc = document.createElement('div');           // butt cap: one flat disc, edge-on from the side
     disc.className = 'cap-disc';
@@ -1217,6 +1450,205 @@
   /* =====================================================================
      Render: push the state into the SVG, the 3D layers and the controls
      ===================================================================== */
+  /* =====================================================================
+     Metallic finishes: gradient stops generated from the chosen color
+     ===================================================================== */
+  var metalCache = {};
+  function metalStops(c, mode) {
+    var st = mode === 'strip' ? [[0, .6], [.28, .15], [.55, -.15], [.78, -.45], [1, -.2]]
+                              : [[0, .05], [.14, .6], [.28, -.05], [.42, -.5], [.56, .1], [.7, .65], [.85, -.1], [1, -.45]];
+    return st.map(function (x) { return '<stop offset="' + x[0] + '" stop-color="' + shade(c, x[1]) + '"/>'; }).join('');
+  }
+  function setStops(id, color, mode) {
+    if (metalCache[id] === color) return;
+    metalCache[id] = color;
+    $(id).innerHTML = metalStops(color, mode);
+  }
+  function updateMetal() {
+    setStops('gradEdgeMetal', state.edge, 'diag');
+    setStops('gradCollarMetal', state.collar, 'strip');
+    setStops('gradCapMetal', state.cap, 'strip');
+  }
+
+  /* =====================================================================
+     Image layers: any number of uploaded images, stacked, per-side, single or tiled
+     ===================================================================== */
+  var selLayer = null, layerCache = {}, layerOrder = '', layerSig = '';
+  function curLayer() { for (var i = 0; i < state.layers.length; i++) if (state.layers[i].id === selLayer) return state.layers[i]; return null; }
+  function idxOf(id) { for (var i = 0; i < state.layers.length; i++) if (state.layers[i].id === id) return i; return -1; }
+
+  function mkLayerNodes(l) {
+    function grp() {
+      var g = svgEl('g', {}), s = svgEl('g', {}), im = svgEl('image', { preserveAspectRatio: 'none' });
+      s.appendChild(im); g.appendChild(s);
+      g.appendChild(svgEl('rect', { x: 40, y: -40, width: 320, height: 860, fill: 'url(#lp-' + l.id + ')' }));
+      return g;
+    }
+    var pat = svgEl('pattern', { id: 'lp-' + l.id, patternUnits: 'userSpaceOnUse' });
+    pat.appendChild(svgEl('image', { preserveAspectRatio: 'none' }));
+    var c = { f: grp(), b: grp(), pat: pat };
+    $('layersF').appendChild(c.f); $('layersB').appendChild(c.b); $('layerDefs').appendChild(pat);
+    layerCache[l.id] = c;
+  }
+  function syncLayers() {
+    var ids = {};
+    state.layers.forEach(function (l) {
+      ids[l.id] = 1;
+      if (!layerCache[l.id]) mkLayerNodes(l);
+      var c = layerCache[l.id], w = l.size, h = Math.max(1, l.size * l.aspect), cx = 200 + l.x, cy = geo.cy + l.y, op = l.opacity / 100;
+      [c.f, c.b].forEach(function (g, i) {
+        var side = i === 0 ? 'a' : 'b', show = !l.hidden && (l.side === 'both' || l.side === side);
+        g.setAttribute('display', show ? 'inline' : 'none');
+        var s = g.firstChild, t = g.lastChild, im = s.firstChild;
+        if (l.tile) { s.setAttribute('display', 'none'); t.removeAttribute('display'); t.setAttribute('opacity', op); }
+        else {
+          t.setAttribute('display', 'none'); s.removeAttribute('display');
+          s.setAttribute('transform', 'translate(' + cx + ' ' + cy + ') rotate(' + l.rot + ')'); s.setAttribute('opacity', op);
+          im.setAttribute('x', -w / 2); im.setAttribute('y', -h / 2); im.setAttribute('width', w); im.setAttribute('height', h);
+          if (im.getAttribute('href') !== l.img) im.setAttribute('href', l.img);
+        }
+      });
+      if (l.tile) {
+        var tw = w + l.gap, th = h + l.gap, pim = c.pat.firstChild;
+        c.pat.setAttribute('width', tw); c.pat.setAttribute('height', th);
+        c.pat.setAttribute('patternTransform', 'translate(' + cx + ' ' + cy + ') rotate(' + l.rot + ') translate(' + (-tw / 2) + ' ' + (-th / 2) + ')');
+        pim.setAttribute('x', l.gap / 2); pim.setAttribute('y', l.gap / 2); pim.setAttribute('width', w); pim.setAttribute('height', h);
+        if (pim.getAttribute('href') !== l.img) pim.setAttribute('href', l.img);
+      }
+    });
+    Object.keys(layerCache).forEach(function (id) {
+      if (!ids[id]) { var c = layerCache[id]; c.f.remove(); c.b.remove(); c.pat.remove(); delete layerCache[id]; layerOrder = ''; }
+    });
+    var order = state.layers.map(function (l) { return l.id; }).join(',');
+    if (order !== layerOrder) {                         // array order = bottom to top
+      layerOrder = order;
+      state.layers.forEach(function (l) { var c = layerCache[l.id]; $('layersF').appendChild(c.f); $('layersB').appendChild(c.b); });
+    }
+  }
+
+  function renderLayerUI() {
+    if (!state.layers.length) selLayer = null;
+    else if (!curLayer()) selLayer = state.layers[state.layers.length - 1].id;
+    var sig = selLayer + '|' + state.layers.map(function (l) { return l.id + (l.hidden ? 'h' : '') + l.name; }).join(',');
+    if (sig !== layerSig) {
+      layerSig = sig;
+      var list = $('layerList'); list.innerHTML = '';
+      state.layers.slice().reverse().forEach(function (l) {
+        var row = document.createElement('div');
+        row.className = 'lyr' + (l.id === selLayer ? ' sel' : '') + (l.hidden ? ' off' : '');
+        row.dataset.id = l.id;
+        row.innerHTML = '<div class="lt"></div><span class="ln"></span>' +
+          '<button type="button" class="lb" data-act="up" title="Bring forward">↑</button><button type="button" class="lb" data-act="down" title="Send backward">↓</button>' +
+          '<button type="button" class="lb" data-act="eye" title="Show / hide">' + (l.hidden ? 'Show' : 'Hide') + '</button><button type="button" class="lb" data-act="del" title="Delete layer">✕</button>';
+        row.querySelector('.ln').textContent = l.name;
+        row.querySelector('.lt').style.backgroundImage = 'url("' + l.img + '")';
+        list.appendChild(row);
+      });
+    }
+    $('lyCount').textContent = state.layers.length + ' / ' + MAX_LAYERS;
+    $('lyEmpty').style.display = state.layers.length ? 'none' : '';
+    var l = curLayer();
+    $('lyPanel').style.display = l ? '' : 'none';
+    if (!l) return;
+    $('lySize').value = l.size; $('lySizeVal').textContent = l.size + ' px';
+    $('lyGap').value = l.gap; $('lyGapVal').textContent = l.gap; $('lyGap').disabled = !l.tile;
+    $('lyX').value = l.x; $('lyXVal').textContent = l.x;
+    $('lyY').value = l.y; $('lyYVal').textContent = l.y;
+    $('lyRot').value = l.rot; $('lyRotVal').textContent = l.rot + '°';
+    $('lyOp').value = l.opacity; $('lyOpVal').textContent = l.opacity + '%';
+    $('lySideSeg').querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b.dataset.v === l.side); });
+    $('lyModeSeg').querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b.dataset.v === (l.tile ? 'tile' : 'single')); });
+  }
+  $('lyPick').addEventListener('click', function () {
+    if (state.layers.length >= MAX_LAYERS) { toast('Up to ' + MAX_LAYERS + ' image layers'); return; }
+    $('lyFile').click();
+  });
+  $('lyFile').addEventListener('input', function (e) {
+    var file = e.target.files && e.target.files[0]; e.target.value = '';
+    readImageFile(file, function (url, w, h) {
+      var l = { id: uid(), name: (file.name || 'Image').replace(/\.[^.]+$/, '').slice(0, 22), img: url, aspect: h / w, size: 150, x: 0, y: 0, rot: 0, opacity: 100, side: 'both', tile: false, gap: 0, hidden: false };
+      state.layers.push(l); selLayer = l.id; update(); toast('Layer added');
+    });
+  });
+  $('layerList').addEventListener('click', function (e) {
+    var row = e.target.closest('.lyr'); if (!row) return;
+    var id = row.dataset.id, i = idxOf(id), act = e.target.closest('[data-act]'), L = state.layers, t;
+    if (act) {
+      var a = act.dataset.act;
+      if (a === 'up' && i < L.length - 1) { t = L[i]; L[i] = L[i + 1]; L[i + 1] = t; }
+      else if (a === 'down' && i > 0) { t = L[i]; L[i] = L[i - 1]; L[i - 1] = t; }
+      else if (a === 'eye') L[i].hidden = !L[i].hidden;
+      else if (a === 'del') { L.splice(i, 1); if (selLayer === id) selLayer = null; }
+      layerSig = '';
+    } else selLayer = id;
+    update();
+  });
+  [['lySize', 'size'], ['lyGap', 'gap'], ['lyX', 'x'], ['lyY', 'y'], ['lyRot', 'rot'], ['lyOp', 'opacity']].forEach(function (p) {
+    $(p[0]).addEventListener('input', function (e) { var l = curLayer(); if (!l) return; l[p[1]] = +e.target.value; update(); });
+  });
+  $('lySideSeg').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var l = curLayer(); if (l) { l.side = b.dataset.v; update(); } }); });
+  $('lyModeSeg').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var l = curLayer(); if (l) { l.tile = b.dataset.v === 'tile'; update(); } }); });
+  $('lyReset').addEventListener('click', function () { var l = curLayer(); if (l) { l.x = 0; l.y = 0; l.rot = 0; update(); } });
+
+  /* =====================================================================
+     Edgeguard print: text follows the edgeguard outline, logo sits on it
+     ===================================================================== */
+  $('edgeTextInput').addEventListener('input', function (e) { state.edgeText = e.target.value; update(); });
+  $('edgeTextColor').addEventListener('input', function (e) { state.edgeText && 0; state.edgeTextColor = e.target.value; update(); });
+  wireUpload('edgeImgPick', 'edgeImgFile', 'edgeImgClear',
+    function (url, w, h) { state.edgeImg = url; state.edgeImgAspect = h / w; update(); toast('Edgeguard logo added'); },
+    function () { state.edgeImg = null; update(); });
+  function syncEdgeDeco() {
+    var txt = state.edgeText.trim().toUpperCase(), pt = null;
+    if (state.edgeImg) {
+      var path = $('edgeguard'), len = path.getTotalLength(), at = len * state.edgeImgPos / 100;
+      var p0 = path.getPointAtLength(Math.max(0, at - 1)), p1 = path.getPointAtLength(Math.min(len, at + 1)), pc = path.getPointAtLength(at);
+      pt = { x: pc.x, y: pc.y, a: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI };
+    }
+    ['F', 'B'].forEach(function (S) {
+      var side = S === 'F' ? 'a' : 'b', t = $('edgeTxt' + S), im = $('edgeImg' + S);
+      var showT = !!txt && (state.edgeTextSide === 'both' || state.edgeTextSide === side);
+      t.style.display = showT ? '' : 'none';
+      if (showT) {
+        $('edgeTP' + S).textContent = txt; $('edgeTP' + S).setAttribute('startOffset', state.edgeTextPos + '%');
+        t.setAttribute('font-size', state.edgeTextSize); t.setAttribute('letter-spacing', (state.edgeTextSize * 0.18).toFixed(2)); t.setAttribute('fill', state.edgeTextColor);
+      }
+      var showI = !!pt && (state.edgeImgSide === 'both' || state.edgeImgSide === side);
+      im.style.display = showI ? '' : 'none';
+      if (showI) {
+        var w = state.edgeImgSize, h = Math.max(1, w * state.edgeImgAspect);
+        im.setAttribute('x', -w / 2); im.setAttribute('y', -h / 2); im.setAttribute('width', w); im.setAttribute('height', h);
+        im.setAttribute('transform', 'translate(' + pt.x.toFixed(2) + ' ' + pt.y.toFixed(2) + ') rotate(' + pt.a.toFixed(2) + ')');
+        if (im.getAttribute('href') !== state.edgeImg) im.setAttribute('href', state.edgeImg);
+      }
+    });
+  }
+
+  /* =====================================================================
+     Save & share: URL hash, JSON download / copy, load from file or pasted text
+     ===================================================================== */
+  function applyLoaded(obj, msg) {
+    state = sanitize(obj); selLayer = null; layerSig = '';
+    update(); toast(msg);
+  }
+  $('copyJson').addEventListener('click', function () { copyText(JSON.stringify(state, null, 2), 'Design JSON copied'); });
+  $('dlJson').addEventListener('click', function () {
+    download(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), 'paddle-design.json'); toast('Design saved as JSON');
+  });
+  $('loadJsonBtn').addEventListener('click', function () { $('jsonFile').click(); });
+  $('jsonFile').addEventListener('input', function (e) {
+    var f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    var r = new FileReader();
+    r.onerror = function () { toast('Could not read that file'); };
+    r.onload = function () { try { applyLoaded(JSON.parse(r.result), 'Design loaded'); } catch (err) { toast('That is not a valid design file'); } };
+    r.readAsText(f);
+  });
+  $('loadPasted').addEventListener('click', function () {
+    try { applyLoaded(JSON.parse($('jsonBox').value), 'Design loaded'); $('jsonBox').value = ''; } catch (err) { toast('That is not valid design JSON'); }
+  });
+
+
   var thumbCache = {};
   function syncThumb(id, src) {
     if (thumbCache[id] === src) return;
@@ -1233,7 +1665,12 @@
     var half = state.thick * MM_TO_U / 2, hz = 14 + 0.4 * half;
     model.style.setProperty('--half', half.toFixed(3));
     model.style.setProperty('--hz', hz.toFixed(3));
-    model.style.setProperty('--capd', (2 * hz * handleWidth(1)).toFixed(2));
+    model.style.setProperty('--capd', (2 * hz - 4).toFixed(2));
+    model.style.setProperty('--hpw', handleWidth(1, hz).toFixed(3));
+    if (hz !== lastHz) {
+      lastHz = hz;
+      hsGroups.forEach(function (o) { o.el.setAttribute('transform', 'translate(200 0) scale(' + handleWidth(o.s, hz).toFixed(4) + ' 1) translate(-200 0)'); });
+    }
     model.style.setProperty('--grip-on', state.grip ? 1 : 0);
 
     // ----- Surface -----
@@ -1258,31 +1695,26 @@
     }
     gloss = mat ? mat.gloss : 0.4;
     $('glossRect').setAttribute('opacity', gloss);
-    var gr = Math.min(0.9, (state.grit / 100) * (mat ? mat.grit : 0.9)).toFixed(3);
+    var gr = Math.min(0.95, (state.grit / 100) * (mat ? mat.grit : 0.9) * 0.9).toFixed(3);
     $('gritF').setAttribute('opacity', gr); $('gritB').setAttribute('opacity', gr);
 
     // ----- Edgeguard, throat ring, handle, cap -----
-    $('edgeguard').setAttribute('stroke', state.edge);
+    updateMetal();
+    $('edgeguard').setAttribute('stroke', state.edgeMetal ? 'url(#gradEdgeMetal)' : state.edge);
+    model.classList.toggle('metal', !!state.edgeMetal);
     $('edgeguard').setAttribute('stroke-width', state.edgeW);
     $('edgeInner').setAttribute('stroke-width', state.edgeW + 10);
     var cwid = 26 + state.edgeW / 2 + 1.5;
     ['collar', 'collarHi', 'collarLo'].forEach(function (id) { $(id).setAttribute('x', 200 - cwid); $(id).setAttribute('width', cwid * 2); });
     var cy0 = geo.yB - 10;
     $('collar').setAttribute('y', cy0); $('collarHi').setAttribute('y', cy0); $('collarLo').setAttribute('y', cy0 + 9.6);
-    $('collar').setAttribute('fill', state.collar);
+    $('collar').setAttribute('fill', state.collarMetal ? 'url(#gradCollarMetal)' : state.collar);
     $('handle').setAttribute('fill', state.handle);
     $('gripWrap').setAttribute('opacity', state.grip ? 1 : 0);
-    $('capBand').setAttribute('fill', state.cap);
+    $('capBand').setAttribute('fill', state.capMetal ? 'url(#gradCapMetal)' : state.cap);
 
-    // ----- Logo: the <g> carries translate + rotate; the <image> stays centered on the group origin -----
-    var lg = $('logoGroup'), li = $('logoImage');
-    if (state.logoImg) {
-      var lw = state.logoSize, lh = lw * state.logoAspect;
-      li.setAttribute('x', -lw / 2); li.setAttribute('y', -lh / 2); li.setAttribute('width', lw); li.setAttribute('height', lh);
-      if (li.getAttribute('href') !== state.logoImg) li.setAttribute('href', state.logoImg);
-      lg.setAttribute('transform', 'translate(' + (200 + state.logoX) + ' ' + (geo.cy + state.logoY) + ') rotate(' + state.logoRot + ')');
-      lg.removeAttribute('display');
-    } else { lg.setAttribute('display', 'none'); li.removeAttribute('href'); }
+    syncLayers();
+    syncEdgeDeco();
 
     // ----- Text: small and horizontal above the throat (like the reference paddles), or large along the face -----
     var t1 = $('faceText'), t2 = $('faceText2'), tg = $('textG');
@@ -1327,7 +1759,6 @@
     syncThumb('customSw', state.patImg);
     matsEl.querySelectorAll('.mat').forEach(function (b) {
       b.classList.toggle('active', b.dataset.id === surface);
-      if (b.dataset.id === 'custom') b.disabled = !state.patImg;
     });
     var surfLabel = mat ? mat.label : surface === 'custom' ? 'Custom upload' : 'Solid colour';
     $('surfName').textContent = surfLabel;
@@ -1336,17 +1767,22 @@
     $('grit').value = state.grit; $('gritVal').textContent = state.grit + '%';
     $('textColor').value = state.text;
     syncThumb('patThumb', state.patImg);
-    syncThumb('logoThumb', state.logoImg);
-    $('patClear').disabled = !state.patImg; $('logoClear').disabled = !state.logoImg;
+    $('surfRemove').disabled = !state.patImg;
+    $('patClear').disabled = !state.patImg;
     $('patSize').disabled = !state.patImg; $('patOp').disabled = !state.patImg;
-    ['logoSize', 'logoX', 'logoY', 'logoRot', 'logoCenter'].forEach(function (id) { $(id).disabled = !state.logoImg; });
     $('patSize').value = state.patSize;     $('patSizeVal').textContent = state.patSize + ' px';
     $('patOp').value = state.patOpacity;    $('patOpVal').textContent = state.patOpacity + '%';
-    $('logoSize').value = state.logoSize;   $('logoSizeVal').textContent = state.logoSize + ' px';
-    $('logoX').value = state.logoX;         $('logoXVal').textContent = state.logoX;
-    $('logoY').value = state.logoY;         $('logoYVal').textContent = state.logoY;
-    $('logoRot').value = state.logoRot;     $('logoRotVal').textContent = state.logoRot + '°';
     $('edgeW').value = state.edgeW;
+    document.querySelectorAll('[data-metal]').forEach(function (c) { c.checked = !!state[c.dataset.metal]; });
+    renderLayerUI();
+    if (document.activeElement !== $('edgeTextInput')) $('edgeTextInput').value = state.edgeText;
+    $('edgeTextColor').value = state.edgeTextColor;
+    $('edgeTextPos').value = state.edgeTextPos; $('edgeTextPosVal').textContent = state.edgeTextPos + '%';
+    $('edgeTextSize').value = state.edgeTextSize; $('edgeTextSizeVal').textContent = state.edgeTextSize;
+    $('edgeImgSize').value = state.edgeImgSize; $('edgeImgSizeVal').textContent = state.edgeImgSize;
+    $('edgeImgPos').value = state.edgeImgPos; $('edgeImgPosVal').textContent = state.edgeImgPos + '%';
+    syncThumb('edgeThumb', state.edgeImg);
+    $('edgeImgClear').disabled = !state.edgeImg; $('edgeImgSize').disabled = !state.edgeImg; $('edgeImgPos').disabled = !state.edgeImg;
     $('gripToggle').checked = state.grip;
     if (document.activeElement !== $('nameInput')) $('nameInput').value = state.name;
     if (document.activeElement !== $('subInput')) $('subInput').value = state.sub;
@@ -1361,7 +1797,7 @@
     var badge = $('legalBadge');
     badge.textContent = legal ? 'USAP legal · ' + (state.len + state.wid).toFixed(2) + '″ of 24″' : 'Over USAP limit';
     badge.classList.toggle('bad', !legal);
-    [['fillSeg', 'fill'], ['dirSeg', 'textDir'], ['expViewSeg', 'expView'], ['expBgSeg', 'expBg']].forEach(function (x) {
+    [['fillSeg', 'fill'], ['dirSeg', 'textDir'], ['expViewSeg', 'expView'], ['expBgSeg', 'expBg'], ['edgeTextSideSeg', 'edgeTextSide'], ['edgeImgSideSeg', 'edgeImgSide']].forEach(function (x) {
       $(x[0]).querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b.dataset.v === state[x[1]]); });
     });
 
@@ -1372,9 +1808,11 @@
       '<dt>Thickness</dt><dd>' + state.thick + ' mm</dd>' +
       '<dt>Surface</dt><dd>' + surfLabel + '</dd>' +
       '<dt>Edgeguard</dt><dd>' + state.edge.toUpperCase() + '</dd>' +
-      '<dt>Grip / cap</dt><dd>' + state.handle.toUpperCase() + ' / ' + state.cap.toUpperCase() + '</dd>';
+      '<dt>Grip / cap</dt><dd>' + state.handle.toUpperCase() + ' / ' + state.cap.toUpperCase() + '</dd>' +
+      '<dt>Image layers</dt><dd>' + state.layers.length + '</dd>';
 
-    saveSoon();
+    saveSoon(); syncHash();
+    $('imgWarn').style.display = (state.patImg || state.edgeImg || state.layers.length) ? 'block' : 'none';
   }
 
   update();
